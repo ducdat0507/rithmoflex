@@ -10,6 +10,7 @@ public class Charter : EditorWindow
     public PlayableSong TargetSong;
     public Chart TargetChart;
     public Judge TargetJudge;
+    public HitObject TargetHit;
 
     public AudioSource TargetPlayer;
 
@@ -48,10 +49,12 @@ public class Charter : EditorWindow
             {
                 TargetChart = null;
                 TargetJudge = null;
+                TargetHit = null;
             }
             else if (!TargetChart.Judges.Contains(TargetJudge))
             {
                 TargetJudge = null;
+                TargetHit = null;
             }
 
             Rect sa = new Rect(40, 37, position.width - 292, position.height - 163);
@@ -92,9 +95,33 @@ public class Charter : EditorWindow
                             Vector3 end = pos + delta;
                             Handles.DrawLine((Vector3)sa.position + start * scale + Vector3.back, (Vector3)sa.position + end * scale + Vector3.back, (chosen ? 3 : 2) / (depth + depthConst) * depthConst);
                             foreach (HitObject obj in judge.Objects) {
-                                if (TargetPlayer && TargetPlayer.time - .25f < obj.Offset / 1000f && TargetPlayer.time > (obj.Offset - obj.AppearTime) / 1000f) {
+                                if (TargetPlayer && (TargetPlayer.time - .25f < (obj.Rail.Count > 0 ? obj.Rail[obj.Rail.Count - 1].Offset : obj.Offset) / 1000f) && TargetPlayer.time > (obj.Offset - obj.AppearTime) / 1000f) {
+                                    Vector3 rStart = judge.Position - (Vector3)delta;
+                                    Vector3 rEnd = judge.Position + (Vector3)delta;
                                     HitObject objg = (HitObject)obj.Get(TargetPlayer ? TargetPlayer.time * 1000 : 0);
-                                    RenderObject(objg, Vector2.Lerp(start, end, objg.Position), TargetThing == obj);
+                                    Debug.Log(objg.Rail.Count);
+                                    List<Vector3> railPoints = new List<Vector3>();
+                                    float rPos = objg.Position;
+                                    if (objg.Rail.Count > 0) {
+                                        rPos = ((RailTimestamp)objg.Rail[objg.Rail.Count - 1].Get(TargetPlayer ? TargetPlayer.time * 1000 : 0)).Position;
+                                        for (int a = 0; a < objg.Rail.Count; a++) {
+                                            if (TargetPlayer.time > objg.Rail[a].Offset / 1000f) continue;
+                                            RailTimestamp endRail = (RailTimestamp)objg.Rail[a].Get(TargetPlayer ? TargetPlayer.time * 1000 : 0);
+                                            if (railPoints.Count == 0) {
+                                                RailTimestamp startRail = a < 1 ? new RailTimestamp { Offset = objg.Offset, Position = objg.Position, Velocity = objg.Velocity } :
+                                                    (RailTimestamp)objg.Rail[a - 1].Get(TargetPlayer ? TargetPlayer.time * 1000 : 0);
+                                                float sPos = Mathf.Lerp(startRail.Position, endRail.Position, (TargetPlayer.time * 1000 - startRail.Offset) / (endRail.Offset - (float)startRail.Offset));
+                                                rPos = sPos;
+                                                Vector3 sVec = Vector3.Lerp(rStart, rEnd, sPos) + startRail.Velocity * Mathf.Max(startRail.Offset / 1000f - TargetPlayer.time, 0);
+                                                railPoints.Add((Vector3)sa.position + sVec * scale + Vector3.back * 4);
+                                            }
+                                            float ePos = endRail.Position;
+                                            Vector3 eVec = Vector3.Lerp(rStart, rEnd, ePos) + endRail.Velocity * (endRail.Offset / 1000f - TargetPlayer.time);
+                                            railPoints.Add((Vector3)sa.position + eVec * scale + Vector3.back * 4);
+                                        }
+                                        Handles.DrawAAPolyLine(2f * size, railPoints.ToArray());
+                                    }
+                                    RenderObject(objg, Vector2.Lerp(rStart, rEnd, rPos), TargetThing == obj);
                                 }
                             }
                         }
@@ -121,12 +148,14 @@ public class Charter : EditorWindow
                 {
 
                     float rTime = obj.Offset / 1000f - (TargetPlayer ? TargetPlayer.time : 0);
+                    float aTime = (obj.Rail.Count > 0 ? obj.Rail[obj.Rail.Count - 1].Offset : obj.Offset) / 1000f;
+                    float arTime = aTime - (TargetPlayer ? TargetPlayer.time : 0);
                     pos += obj.Velocity * Mathf.Max(rTime, 0);
                     float depth = pos.z;
                     pos = (pos - new Vector3(6, 3.375f)) / (depth + depthConst) * depthConst + new Vector3(6, 3.375f);
 
-                    float pow = 1 - Mathf.Pow(1 - Mathf.Max(-rTime / .25f, 0), 5);
-                    float pow2 = 1 - Mathf.Pow(Mathf.Max(-rTime / .25f, 0), 5);
+                    float pow = 1 - Mathf.Pow(1 - Mathf.Max(-arTime / .25f, 0), 5);
+                    float pow2 = 1 - Mathf.Pow(Mathf.Max(-arTime / .25f, 0), 5);
 
                     float angle = 360;
                     float size = .375f;
@@ -225,6 +254,34 @@ public class Charter : EditorWindow
                             TargetJudge.Objects.Add(hit);
                             TargetJudge.Objects.Sort((x, y) => x.Offset.CompareTo(y.Offset));
                             Repaint();
+                        }
+                        else if (CurrentTool == "rail" && TargetHit != null)
+                        {
+
+                            float pos = 0;
+                            if (TargetJudge.Type == Judge.JudgeType.Line) 
+                            {
+                                Judge judge = TargetJudge;
+                                Vector3 delta = new Vector2(judge.Length * Mathf.Cos(judge.Rotation * Mathf.Deg2Rad), judge.Length * Mathf.Sin(judge.Rotation * Mathf.Deg2Rad));
+                                Vector3 start = judge.Position - delta;
+                                Vector3 end = judge.Position + delta;
+                                Vector3 point = (mPos - sa.position) / scale;
+                                pos = Mathf.Clamp01(1 - Vector2.Dot(point - end, start - end) / Vector2.Dot(start - end, start - end));
+                            }
+                            Debug.Log(pos);
+
+                            RailTimestamp rail = new RailTimestamp
+                            {
+                                Offset = TargetPlayer ? (int)(TargetPlayer.time * 1000) : 0,
+                                Position = pos,
+                                Velocity = TargetHit.Velocity,
+                            };
+
+                            TargetHit.Rail.Add(rail);
+                            TargetHit.Rail.Sort((x, y) => x.Offset.CompareTo(y.Offset));
+                            Repaint();
+                            
+                            Debug.Log("Making rail");
                         }
                     }
                 }
@@ -475,6 +532,7 @@ public class Charter : EditorWindow
 
         string[] editModes = new[] { "Timing", "S.board", "Judges" };
         if (TargetJudge != null) editModes = new[] { "Timing", "S.board", "Judges", "Hits" };
+        if (TargetHit != null) editModes = new[] { "Timing", "S.board", "Judges", "Hits", "Line" };
         editMode = GUI.Toolbar(new Rect(5, 95, 320, 20), editMode, editModes);
 
         GUI.Label(new Rect(330, 96, 120, 18), TargetPlayer ? (TargetPlayer.time * 1000).ToString("0") : "");
@@ -561,6 +619,7 @@ public class Charter : EditorWindow
                                 TargetChart.Judges.Remove(judge);
                                 if (TargetThing == judge) TargetThing = null;
                                 if (TargetJudge == judge) TargetJudge = null;
+                                if (judge.Objects.Contains(TargetHit)) TargetHit = null;
                                 break;
                             }
                             else DeletingItem = judge;
@@ -568,7 +627,7 @@ public class Charter : EditorWindow
                         else 
                         {
                             TargetThing = TargetJudge = judge;
-                            
+                            TargetHit = null;
                         } 
                     }
                 }
@@ -596,8 +655,35 @@ public class Charter : EditorWindow
                         }
                         else 
                         {
-                            TargetThing = hit;
-                            
+                            TargetThing = TargetHit = hit;
+                        } 
+                    }
+                }
+            }
+        }
+        else if (editMode == 4)
+        {
+            if (TargetJudge != null)
+            {
+                foreach (RailTimestamp rail in TargetHit.Rail)
+                {
+                    float pos = getPos(rail.Offset);
+                    int y = AddTime(pos, 20);
+                    if (GUI.Button(new Rect(pos - 7, 6 + 20 * y, 18, 18), DeletingItem == rail ? "?" : "", bStyle)) 
+                    {
+                        if (CurrentTool == "delete") 
+                        {
+                            if (DeletingItem == rail) 
+                            {
+                                TargetHit.Rail.Remove(rail);
+                                if (TargetThing == rail) TargetThing = null;
+                                break;
+                            }
+                            else DeletingItem = rail;
+                        }
+                        else 
+                        {
+                            TargetThing = rail;
                         } 
                     }
                 }
@@ -942,6 +1028,24 @@ public class Charter : EditorWindow
                     obj.Opacity = EditorGUILayout.FloatField("Opacity", obj.Opacity);
                     GUILayout.EndScrollView();
                 }
+                else if (TargetThing is RailTimestamp) 
+                {
+                    RailTimestamp obj = (RailTimestamp)TargetThing;
+                    GUI.Label(new Rect(6, 4, 140, 18), "Rail Timestamp", EditorStyles.boldLabel);
+
+                    GUIStyle msStyle = new GUIStyle("textField");
+                    msStyle.alignment = TextAnchor.MiddleRight;
+                    msStyle.fontStyle = FontStyle.Bold;
+                    obj.Offset = EditorGUI.IntField(new Rect(154, 4, 60, 18), obj.Offset, msStyle);
+                    GUI.Label(new Rect(214, 4, 20, 18), "ms");
+
+                    GUILayout.Space(8);
+                    GUILayout.BeginScrollView(AttributeScroll);
+                    GUILayout.Label("Transform", "BoldLabel");
+                    obj.Position = EditorGUILayout.Slider("Position", obj.Position, 0, 1);
+                    obj.Velocity = EditorGUILayout.Vector3Field("Velocity", obj.Velocity);
+                    GUILayout.EndScrollView();
+                }
                 else if (editMode == 1 && TargetChart != null) 
                 {
                     GUI.Label(new Rect(6, 4, 140, 18), "Judgements", EditorStyles.boldLabel);
@@ -1016,6 +1120,10 @@ public class Charter : EditorWindow
             if (GUI.Toggle(new Rect(0, 57, width, 28), CurrentTool == "h_normal", ToolbarExpanded ? "Normal" : "NR", itemStyle)) CurrentTool = "h_normal"; 
             if (GUI.Toggle(new Rect(0, 84, width, 28), CurrentTool == "h_catch", ToolbarExpanded ? "Catch" : "CA", itemStyle)) CurrentTool = "h_catch"; 
             // if (GUI.Toggle(new Rect(0, 111, width, 28), CurrentTool == "h_flick", ToolbarExpanded ? "Flick" : "FK", itemStyle)) CurrentTool = "h_flick"; 
+        }
+        else if (editMode == 4)
+        {
+            if (GUI.Toggle(new Rect(0, 57, width, 28), CurrentTool == "rail", ToolbarExpanded ? "Rail" : "RL", itemStyle)) CurrentTool = "rail"; 
         }
         
         if (GUI.Button(new Rect(0, position.height - 188, width, 28), ToolbarExpanded ? GetContent("Collapse", "tab_prev") : GetContent("Expand", "tab_next"), itemStyle)) ToolbarExpanded = !ToolbarExpanded;

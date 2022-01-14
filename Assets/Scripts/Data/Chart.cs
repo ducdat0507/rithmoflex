@@ -95,8 +95,10 @@ public class HitObject : IStoryboardable {
     {
         Normal,
         Catch,
-        Flick
+        Flick,
     }
+
+    public List<RailTimestamp> Rail = new List<RailTimestamp>();
 
     public new static TimestampType[] TimestampTypes = {
         new TimestampType {
@@ -128,6 +130,41 @@ public class HitObject : IStoryboardable {
             Name = "Opacity",
             Get = (x) => ((HitObject)x).Opacity,
             Set = (x, a) => { ((HitObject)x).Opacity = a; },
+        },
+    };
+}
+
+[System.Serializable]
+public class RailTimestamp : IStoryboardable {
+    public int Offset = 0;
+    public float Position;
+    public Vector3 Velocity;
+    
+
+    public new static TimestampType[] TimestampTypes = {
+        new TimestampType {
+            ID = "Position",
+            Name = "Position",
+            Get = (x) => ((RailTimestamp)x).Position,
+            Set = (x, a) => { ((RailTimestamp)x).Position = a; },
+        },
+        new TimestampType {
+            ID = "Velocity_X",
+            Name = "Velocity X",
+            Get = (x) => ((RailTimestamp)x).Velocity.x,
+            Set = (x, a) => { ((RailTimestamp)x).Velocity.x = a; },
+        },
+        new TimestampType {
+            ID = "Velocity_Y",
+            Name = "Velocity Y",
+            Get = (x) => ((RailTimestamp)x).Velocity.y,
+            Set = (x, a) => { ((RailTimestamp)x).Velocity.y = a; },
+        },
+        new TimestampType {
+            ID = "Velocity_Z",
+            Name = "Velocity Z",
+            Get = (x) => ((RailTimestamp)x).Velocity.z,
+            Set = (x, a) => { ((RailTimestamp)x).Velocity.z = a; },
         },
     };
 }

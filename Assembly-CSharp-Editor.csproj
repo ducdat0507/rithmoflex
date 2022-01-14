@@ -666,6 +666,9 @@
     <Reference Include="Unity.TextMeshPro">
         <HintPath>E:\Documents\Project Rithmoflex\Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.2D.Sprite.Editor">
+        <HintPath>E:\Documents\Project Rithmoflex\Library\ScriptAssemblies\Unity.2D.Sprite.Editor.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEditor.UI">
         <HintPath>E:\Documents\Project Rithmoflex\Library\ScriptAssemblies\UnityEditor.UI.dll</HintPath>
     </Reference>

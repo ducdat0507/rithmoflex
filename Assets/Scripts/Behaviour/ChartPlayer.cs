@@ -25,8 +25,9 @@ public class ChartPlayer : MonoBehaviour
     public float SyncThreshold;
     [Space]
     public TMP_Text SongNameText;
+    public TMP_Text SongArtistText;
     public TMP_Text DifficultyText;
-    public Slider ProgressBar;
+    public Image ProgressBar;
 
     void Awake() {
         main = this;
@@ -40,11 +41,12 @@ public class ChartPlayer : MonoBehaviour
         AudioPlayer.Play();
 
         float width = (Screen.height / (float)Screen.width) * 960;
-        float ratio = Mathf.Max(1, width / 930 * 16 / 9);
+        float ratio = Mathf.Max(1, width / 960 * 16 / 9);
         float scale =  (Mathf.Tan(Mathf.PI * 1 / 3) * 3.375f);
-        MainCamera.position = new Vector3(0, scale * 15 / 960, -scale * ratio);
+        MainCamera.position = new Vector3(0, 0, -scale * ratio);
 
         SongNameText.text = _PlayableSong.SongName;
+        SongArtistText.text = _PlayableSong.SongArtist;
         DifficultyText.text = CurrentChart.DifficultyLevel;
     }
 
@@ -61,7 +63,7 @@ public class ChartPlayer : MonoBehaviour
             if (!AudioPlayer.isPlaying) AudioPlayer.Play();
             if (Mathf.Abs(TrackTime - AudioPlayer.time) >= SyncThreshold) AudioPlayer.time = TrackTime;
         }
-        ProgressBar.value = TrackTime / AudioPlayer.clip.length;
+        ProgressBar.fillAmount = TrackTime / AudioPlayer.clip.length;
 
         while (true)
         {
