@@ -1,9 +1,10 @@
 # rithmoflex
+todo: proper readme
 
 ## setup:
 * get unity editor (i'm using 2021.1)
 * clone (download) project to computer
-* open project using editor editor
+* open project using unity editor
 
 ## make playable song:
 * press "rithmoflex" on top bar
