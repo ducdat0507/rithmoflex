@@ -8,6 +8,7 @@ public class Chart
     public string DifficultyName = "Normal";
     public string DifficultyLevel = "6";
 
+    public List<JudgeGroup> Groups = new List<JudgeGroup>();
     public List<Judge> Judges = new List<Judge>();
 
     public Chart() {
@@ -25,6 +26,7 @@ public class Judge : IStoryboardable {
     public float Length;
     public float Rotation;
     public float ArcAngle;
+    public string Group;
 
     public float Opacity = 1;
 
@@ -82,12 +84,47 @@ public class Judge : IStoryboardable {
 }
 
 [System.Serializable]
+public class JudgeGroup : IStoryboardable {
+    public string Name;
+    public Vector3 Position;
+    public float Rotation;
+
+    public new static TimestampType[] TimestampTypes = {
+        new TimestampType {
+            ID = "Position_X",
+            Name = "Position X",
+            Get = (x) => ((JudgeGroup)x).Position.x,
+            Set = (x, a) => { ((JudgeGroup)x).Position.x = a; },
+        },
+        new TimestampType {
+            ID = "Position_Y",
+            Name = "Position Y",
+            Get = (x) => ((JudgeGroup)x).Position.y,
+            Set = (x, a) => { ((JudgeGroup)x).Position.y = a; },
+        },
+        new TimestampType {
+            ID = "Position_Z",
+            Name = "Position Z",
+            Get = (x) => ((JudgeGroup)x).Position.z,
+            Set = (x, a) => { ((JudgeGroup)x).Position.z = a; },
+        },
+        new TimestampType {
+            ID = "Rotation",
+            Name = "Rotation",
+            Get = (x) => ((JudgeGroup)x).Rotation,
+            Set = (x, a) => { ((JudgeGroup)x).Rotation = a; },
+        },
+    };
+}
+
+[System.Serializable]
 public class HitObject : IStoryboardable {
     public int Offset = 0;
     public float AppearTime = 2000;
     public float Position;
     public Vector3 Velocity;
     public HitType Type;
+    public CoordinateMode CoordinateMode;
 
     public float Opacity = 1;
     
@@ -167,4 +204,10 @@ public class RailTimestamp : IStoryboardable {
             Set = (x, a) => { ((RailTimestamp)x).Velocity.z = a; },
         },
     };
+}
+
+public enum CoordinateMode {
+    Local,
+    Group,
+    Global,
 }

@@ -43,6 +43,7 @@
      <Compile Include="Assets\Scripts\Behaviour\ChartPlayer.cs" />
      <Compile Include="Assets\Scripts\Behaviour\JudgeHolder.cs" />
      <Compile Include="Assets\Scripts\Data\IStoryboardable.cs" />
+     <Compile Include="Assets\Scripts\Behaviour\JudgeGroupHolder.cs" />
      <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
      <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
      <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />

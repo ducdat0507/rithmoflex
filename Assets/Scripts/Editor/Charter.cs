@@ -78,9 +78,23 @@ public class Charter : EditorWindow
 
             if (TargetChart != null)
             {
+                Dictionary<string, JudgeGroup> groups = new Dictionary<string, JudgeGroup>();
+                foreach (JudgeGroup group in TargetChart.Groups) {
+                    groups[group.Name] = (JudgeGroup)group.Get(TargetPlayer ? TargetPlayer.time * 1000 : 0);
+                }
+
+                Vector2 GetPosition (Vector3 pos) {
+                    return (pos - new Vector3(6, 3.375f)) / (pos.z + depthConst) * depthConst + new Vector3(6, 3.375f);
+                }
+
                 void RenderJudge(Judge judge, bool chosen = false) 
                 {
                     judge = (Judge)judge.Get(TargetPlayer ? TargetPlayer.time * 1000 : 0);
+
+                    if (judge.Group != "" && groups.ContainsKey(judge.Group)) {
+                        judge.Rotation += groups[judge.Group].Rotation;
+                        judge.Position = Quaternion.Euler(0, 0, groups[judge.Group].Rotation) * judge.Position + groups[judge.Group].Position;
+                    }
 
                     if (judge.Offset == 0 || (TargetPlayer && TargetPlayer.time * 1000 >= judge.Offset)) 
                     {
@@ -89,7 +103,7 @@ public class Charter : EditorWindow
                             Handles.color = new Color(1, 1, 1, judge.Opacity);
                             float depth = judge.Position.z;
                             float size = judge.Length / (depth + depthConst) * depthConst;
-                            Vector2 pos = (judge.Position - new Vector3(6, 3.375f)) / (depth + depthConst) * depthConst + new Vector3(6, 3.375f);
+                            Vector2 pos = GetPosition(judge.Position);
                             Vector2 delta = new Vector2(size * Mathf.Cos(judge.Rotation * Mathf.Deg2Rad), judge.Length * Mathf.Sin(judge.Rotation * Mathf.Deg2Rad));
                             Vector3 start = pos - delta;
                             Vector3 end = pos + delta;
@@ -99,9 +113,9 @@ public class Charter : EditorWindow
                                     Vector3 rStart = judge.Position - (Vector3)delta;
                                     Vector3 rEnd = judge.Position + (Vector3)delta;
                                     HitObject objg = (HitObject)obj.Get(TargetPlayer ? TargetPlayer.time * 1000 : 0);
-                                    Debug.Log(objg.Rail.Count);
                                     List<Vector3> railPoints = new List<Vector3>();
                                     float rPos = objg.Position;
+                                    float rSize = 0;
                                     if (objg.Rail.Count > 0) {
                                         rPos = ((RailTimestamp)objg.Rail[objg.Rail.Count - 1].Get(TargetPlayer ? TargetPlayer.time * 1000 : 0)).Position;
                                         for (int a = 0; a < objg.Rail.Count; a++) {
@@ -112,16 +126,21 @@ public class Charter : EditorWindow
                                                     (RailTimestamp)objg.Rail[a - 1].Get(TargetPlayer ? TargetPlayer.time * 1000 : 0);
                                                 float sPos = Mathf.Lerp(startRail.Position, endRail.Position, (TargetPlayer.time * 1000 - startRail.Offset) / (endRail.Offset - (float)startRail.Offset));
                                                 rPos = sPos;
-                                                Vector3 sVec = Vector3.Lerp(rStart, rEnd, sPos) + startRail.Velocity * Mathf.Max(startRail.Offset / 1000f - TargetPlayer.time, 0);
-                                                railPoints.Add((Vector3)sa.position + sVec * scale + Vector3.back * 4);
+                                                Vector3 sVel = startRail.Velocity;
+                                                if (obj.CoordinateMode == CoordinateMode.Local) sVel = Quaternion.Euler(0, 0, judge.Rotation) * startRail.Velocity;
+                                                Vector3 sVec = Vector3.Lerp(rStart, rEnd, sPos) + sVel * Mathf.Max(startRail.Offset / 1000f - TargetPlayer.time, 0);
+                                                rSize = 5 / (sVec.z + depthConst) * depthConst;
+                                                railPoints.Add((Vector3)sa.position + (Vector3)GetPosition(sVec) * scale + Vector3.back);
                                             }
                                             float ePos = endRail.Position;
-                                            Vector3 eVec = Vector3.Lerp(rStart, rEnd, ePos) + endRail.Velocity * (endRail.Offset / 1000f - TargetPlayer.time);
-                                            railPoints.Add((Vector3)sa.position + eVec * scale + Vector3.back * 4);
+                                            Vector3 eVel = endRail.Velocity;
+                                            if (obj.CoordinateMode == CoordinateMode.Local) eVel = Quaternion.Euler(0, 0, judge.Rotation) * endRail.Velocity;
+                                            Vector3 eVec = Vector3.Lerp(rStart, rEnd, ePos) + eVel * (endRail.Offset / 1000f - TargetPlayer.time);
+                                            railPoints.Add((Vector3)sa.position + (Vector3)GetPosition(eVec) * scale + Vector3.back);
                                         }
-                                        Handles.DrawAAPolyLine(2f * size, railPoints.ToArray());
+                                        Handles.DrawAAPolyLine(EditorGUIUtility.whiteTexture, rSize, railPoints.ToArray());
                                     }
-                                    RenderObject(objg, Vector2.Lerp(rStart, rEnd, rPos), TargetThing == obj);
+                                    RenderObject(objg, Vector3.Lerp(rStart, rEnd, rPos), judge, TargetThing == obj);
                                 }
                             }
                         }
@@ -138,19 +157,22 @@ public class Charter : EditorWindow
                                 if (TargetPlayer && TargetPlayer.time - .25f < obj.Offset / 1000f && TargetPlayer.time > (obj.Offset - obj.AppearTime) / 1000f) {
                                     HitObject objg = (HitObject)obj.Get(TargetPlayer ? TargetPlayer.time * 1000 : 0);
                                     float angle = (judge.Rotation + judge.ArcAngle * objg.Position) * Mathf.Deg2Rad;
-                                    RenderObject(objg, judge.Position + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle)) * judge.Length, TargetThing == obj);
+                                    RenderObject(objg, judge.Position + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle)) * judge.Length, judge, TargetThing == obj);
                                 }
                             }
                         }
                     }
                 }
-                void RenderObject(HitObject obj, Vector3 pos, bool chosen = false)
+                void RenderObject(HitObject obj, Vector3 pos, Judge judge, bool chosen = false)
                 {
 
                     float rTime = obj.Offset / 1000f - (TargetPlayer ? TargetPlayer.time : 0);
                     float aTime = (obj.Rail.Count > 0 ? obj.Rail[obj.Rail.Count - 1].Offset : obj.Offset) / 1000f;
                     float arTime = aTime - (TargetPlayer ? TargetPlayer.time : 0);
-                    pos += obj.Velocity * Mathf.Max(rTime, 0);
+                    if (obj.CoordinateMode == CoordinateMode.Local)
+                        pos += (Quaternion.Euler(0, 0, judge.Rotation) * obj.Velocity) * Mathf.Max(rTime, 0);
+                    else 
+                        pos += obj.Velocity * Mathf.Max(rTime, 0);
                     float depth = pos.z;
                     pos = (pos - new Vector3(6, 3.375f)) / (depth + depthConst) * depthConst + new Vector3(6, 3.375f);
 
@@ -198,7 +220,7 @@ public class Charter : EditorWindow
                         {
                             Judge line = new Judge
                             {
-                                Offset = TargetPlayer ? (int)(TargetPlayer.time * 1000) : 0,
+                                Offset = TargetPlayer ? Mathf.RoundToInt(TargetPlayer.time * 1000) : 0,
                                 Type = Judge.JudgeType.Line,
                                 Position = (mPos - sa.position) / scale,
                                 Length = 0,
@@ -207,13 +229,12 @@ public class Charter : EditorWindow
                             InitingItem = line;
                             Repaint();
                             RenderJudge(line);
-                            Debug.Log("Making line");
                         }
                         else if (CurrentTool == "j_arc")
                         {
                             Judge line = new Judge
                             {
-                                Offset = TargetPlayer ? (int)(TargetPlayer.time * 1000) : 0,
+                                Offset = TargetPlayer ? Mathf.RoundToInt(TargetPlayer.time * 1000) : 0,
                                 Type = Judge.JudgeType.Arc,
                                 Position = (mPos - sa.position) / scale,
                                 Length = 0,
@@ -223,7 +244,6 @@ public class Charter : EditorWindow
                             InitingItem = line;
                             Repaint();
                             RenderJudge(line);
-                            Debug.Log("Making arc");
                         }
                         else if (CurrentTool.StartsWith("h_") && TargetJudge != null)
                         {
@@ -241,11 +261,10 @@ public class Charter : EditorWindow
                                 Vector3 point = (mPos - sa.position) / scale;
                                 pos = Mathf.Clamp01(1 - Vector2.Dot(point - end, start - end) / Vector2.Dot(start - end, start - end));
                             }
-                            Debug.Log(pos);
 
                             HitObject hit = new HitObject
                             {
-                                Offset = TargetPlayer ? (int)(TargetPlayer.time * 1000) : 0,
+                                Offset = TargetPlayer ? Mathf.RoundToInt(TargetPlayer.time * 1000) : 0,
                                 Type = type,
                                 Position = pos,
                                 Velocity = TargetThing is HitObject ? ((HitObject)TargetThing).Velocity : Vector3.zero,
@@ -268,11 +287,10 @@ public class Charter : EditorWindow
                                 Vector3 point = (mPos - sa.position) / scale;
                                 pos = Mathf.Clamp01(1 - Vector2.Dot(point - end, start - end) / Vector2.Dot(start - end, start - end));
                             }
-                            Debug.Log(pos);
 
                             RailTimestamp rail = new RailTimestamp
                             {
-                                Offset = TargetPlayer ? (int)(TargetPlayer.time * 1000) : 0,
+                                Offset = TargetPlayer ? Mathf.RoundToInt(TargetPlayer.time * 1000) : 0,
                                 Position = pos,
                                 Velocity = TargetHit.Velocity,
                             };
@@ -281,7 +299,6 @@ public class Charter : EditorWindow
                             TargetHit.Rail.Sort((x, y) => x.Offset.CompareTo(y.Offset));
                             Repaint();
                             
-                            Debug.Log("Making rail");
                         }
                     }
                 }
@@ -454,14 +471,14 @@ public class Charter : EditorWindow
                 return s;
             }
 
-            float beat = Mathf.Floor(TargetSong.Timing.ToBeat((int)seekStart));
+            float beat = Mathf.Floor(TargetSong.Timing.ToBeat(Mathf.RoundToInt(seekStart)));
             int ms = TargetSong.Timing.ToMilliseconds(beat);
             BPMStop c = TargetSong.Timing.GetStop(ms);
             float cSlope = getSlope(c);
             BPMStop cBPM = c;
 
-            beat = seekStart < 0 ? Mathf.Ceil(TargetSong.Timing.ToBeat((int)seekStart) / cSlope) * cSlope : 
-                Mathf.Floor(TargetSong.Timing.ToBeat((int)seekStart) / cSlope) * cSlope;
+            beat = seekStart < 0 ? Mathf.Ceil(TargetSong.Timing.ToBeat(Mathf.RoundToInt(seekStart)) / cSlope) * cSlope : 
+                Mathf.Floor(TargetSong.Timing.ToBeat(Mathf.RoundToInt(seekStart)) / cSlope) * cSlope;
 
             int t = 0;
 
@@ -544,8 +561,8 @@ public class Charter : EditorWindow
             EditorGUI.DrawRect(new Rect(position.width - 45, 96, 42, 18), Color.black);
             if (visualMode == 0)
             {
-                float beat = TargetSong.Timing.ToBeat((int)(TargetPlayer.time * 1000));
-                int sig = TargetSong.Timing.GetStop((int)(TargetPlayer.time * 1000)).Signature;
+                float beat = TargetSong.Timing.ToBeat(Mathf.RoundToInt(TargetPlayer.time * 1000));
+                int sig = TargetSong.Timing.GetStop((Mathf.RoundToInt(TargetPlayer.time * 1000))).Signature;
                 EditorGUI.DrawRect(new Rect(position.width - 44 + 40 * (((Mathf.Floor(beat) / sig % 1) + 1) % 1), 97, 40 / sig, 16), Color.white * (1 - (((beat % 1) + 1) % 1)));
             }
             else if (visualMode == 1)
@@ -555,7 +572,7 @@ public class Charter : EditorWindow
                 TargetPlayer.GetSpectrumData(data, 0, FFTWindow.Rectangular);
                 for (int a = 0; a < 8; a++)
                 {
-                    for (int b = (int)Mathf.Pow(2, a); b < Mathf.Pow(2, a + 1); b++)
+                    for (int b = Mathf.RoundToInt(Mathf.Pow(2, a)); b < Mathf.Pow(2, a + 1); b++)
                     {
                         sum[a] += data[b];
                     }
@@ -776,25 +793,67 @@ public class Charter : EditorWindow
             GUI.Label(new Rect(0, 0, 240, 26), "", "Button");
             if (configMode == 0) 
             {
-                GUI.Label(new Rect(7, 4, 140, 18), "Configurations", EditorStyles.boldLabel);
+                GUI.Label(new Rect(6, 4, 140, 18), "Configurations", EditorStyles.boldLabel);
                 
                 GUILayout.Space(8);
                 GUILayout.BeginScrollView(AttributeScroll);
                 GUILayout.EndScrollView();
             }
+            else if (configMode == 3) 
+            {
+                GUI.Label(new Rect(6, 4, 140, 18), "Groups", EditorStyles.boldLabel);
+                
+                if (TargetChart != null) {
+                    GUILayout.Space(8);
+                    AttributeScroll = GUILayout.BeginScrollView(AttributeScroll);
+                    float y = 0;
+
+                    float total = TargetChart.Groups.Count * 22 + 20;
+                    bool ovf = total > position.height - 229;
+
+                    foreach (JudgeGroup group in TargetChart.Groups) 
+                    {
+                        if (GUI.Button(new Rect(3, y, ovf ? 195 : 207, 20), group.Name, "buttonLeft")) {
+                            TargetThing = group;
+                            configMode = 1;
+                        }
+
+                        if (GUI.Button(new Rect(ovf ? 197 : 209, y, 20, 20), DeletingItem == group ? "?" : "x", "buttonRight")) {
+                            if (DeletingItem == group) TargetChart.Groups.Remove(group);
+                            else DeletingItem = group;
+                        }
+                        
+                        y += 22;
+                    }
+
+                    if (GUI.Button(new Rect(3, y, ovf ? 214 : 226, 20), "Add")) {
+                        TargetChart.Groups.Add(new JudgeGroup() {
+                            Name = "Group " + (TargetChart.Groups.Count + 1),
+                        });
+                    }
+
+                    GUILayout.Space(y + 20);
+
+                    GUILayout.EndScrollView();
+                }
+            }
             else if (configMode == 2) 
             {
                 if (TargetThing == (object)TargetSong) 
                 {
-                    GUI.Label(new Rect(7, 4, 140, 18), "Song Storyboard", EditorStyles.boldLabel);
+                    GUI.Label(new Rect(6, 4, 140, 18), "Song Storyboard", EditorStyles.boldLabel);
                 }
                 else if (TargetThing == (object)TargetChart && TargetChart != null) 
                 {
-                    GUI.Label(new Rect(7, 4, 140, 18), "Chart Storyboard", EditorStyles.boldLabel);
+                    GUI.Label(new Rect(6, 4, 140, 18), "Chart Storyboard", EditorStyles.boldLabel);
                 }
                 else if (TargetThing is BPMStop) 
                 {
                     GUI.Label(new Rect(6, 4, 140, 18), "BPM Stop", EditorStyles.boldLabel);
+                }
+                else if (TargetThing is JudgeGroup) 
+                {
+                    GUI.Label(new Rect(6, 4, 140, 18), "Judge Group", EditorStyles.boldLabel);
                 }
                 else if (TargetThing is Judge) 
                 {
@@ -803,6 +862,10 @@ public class Charter : EditorWindow
                 else if (TargetThing is HitObject) 
                 {
                     GUI.Label(new Rect(6, 4, 140, 18), "Hit Object", EditorStyles.boldLabel);
+                }
+                else if (TargetThing is RailTimestamp)
+                {
+                    GUI.Label(new Rect(6, 4, 140, 18), "Rail Timestamp", EditorStyles.boldLabel);
                 }
                 else {
                     GUI.Label(new Rect(6, 4, 140, 18), "No Object", EditorStyles.boldLabel);
@@ -853,7 +916,9 @@ public class Charter : EditorWindow
                         int newType = EditorGUI.Popup(new Rect(6, y + 3, ovf ? 115 : 127, 18), type, tst.ToArray());
                         if (newType != type) ts.ID = tso[newType];
                         ts.Time = EditorGUI.IntField(new Rect(ovf ? 123 : 135, y + 3, 50, 18), ts.Time, msStyle);
-                        GUI.Button(new Rect(ovf ? 174 : 186, y + 3, 20, 18), "ms", "label");
+                        if (GUI.Button(new Rect(ovf ? 174 : 186, y + 3, 20, 18), "ms", "label")) {
+                            ts.Time = Mathf.RoundToInt(TargetPlayer.time * 1000);
+                        };
                         
                         int ease = eso.IndexOf(ts.Easing);
 
@@ -861,7 +926,9 @@ public class Charter : EditorWindow
                         int newEase = EditorGUI.Popup(new Rect(58, y + 23, ovf ? 63 : 75, 18), ease, est.ToArray());
                         if (newEase != ease) ts.Easing = eso[newEase];
                         ts.Duration = EditorGUI.IntField(new Rect(ovf ? 123 : 135, y + 23, 50, 18), ts.Duration, msStyle);
-                        GUI.Button(new Rect(ovf ? 174 : 186, y + 23, 20, 18), "ms", "label");
+                        if (GUI.Button(new Rect(ovf ? 174 : 186, y + 23, 20, 18), "ms", "label")) {
+                            ts.Duration = Mathf.RoundToInt(TargetPlayer.time * 1000) - ts.Time;
+                        }
 
                         if (GUI.Button(new Rect(ovf ? 197 : 209, y, 20, 44), DeletingItem == ts ? "?" : "x", "buttonRight")) {
                             if (DeletingItem == ts) sb.Timestamps.Remove(ts);
@@ -875,7 +942,7 @@ public class Charter : EditorWindow
                     if (add != -1) {
                         sb.Timestamps.Add(new Timestamp {
                             ID = tso[add],
-                            Time = TargetPlayer ? (int)(TargetPlayer.time * 1000) : 0,
+                            Time = TargetPlayer ? Mathf.RoundToInt(TargetPlayer.time * 1000) : 0,
                         });
                     }
                     GUI.Label(new Rect(3, y, 226, 20), "Add...", center);
@@ -901,13 +968,15 @@ public class Charter : EditorWindow
             {
                 if (TargetThing == (object)TargetSong) 
                 {
-                    GUI.Label(new Rect(7, 4, 140, 18), "Song Details", EditorStyles.boldLabel);
+                    GUI.Label(new Rect(6, 4, 140, 18), "Song Details", EditorStyles.boldLabel);
 
                     GUIStyle bStyle = new GUIStyle("textField");
                     bStyle.fontStyle = FontStyle.Bold;
 
                     GUILayout.Space(8);
                     GUILayout.BeginScrollView(AttributeScroll);
+                    if (GUILayout.Button("Set Dirty")) EditorUtility.SetDirty(TargetSong);
+                    GUILayout.Space(8);
                     GUILayout.Label("Metadata", "BoldLabel");
                     TargetSong.SongName = EditorGUILayout.TextField("Title", TargetSong.SongName, bStyle);
                     TargetSong.SongArtist = EditorGUILayout.TextField("Artist", TargetSong.SongArtist);
@@ -939,7 +1008,7 @@ public class Charter : EditorWindow
                 }
                 else if (TargetThing == (object)TargetChart && TargetChart != null) 
                 {
-                    GUI.Label(new Rect(7, 4, 140, 18), "Chart Details", EditorStyles.boldLabel);
+                    GUI.Label(new Rect(6, 4, 140, 18), "Chart Details", EditorStyles.boldLabel);
 
                     GUIStyle bStyle = new GUIStyle("textField");
                     bStyle.fontStyle = FontStyle.Bold;
@@ -969,6 +1038,26 @@ public class Charter : EditorWindow
                     obj.Signature = EditorGUILayout.IntField("Signature", obj.Signature);
                     GUILayout.EndScrollView();
                 }
+                else if (TargetThing is JudgeGroup) 
+                {
+                    JudgeGroup obj = (JudgeGroup)TargetThing;
+                    GUI.Label(new Rect(6, 4, 140, 18), "Judge Group", EditorStyles.boldLabel);
+
+                    GUIStyle msStyle = new GUIStyle("textField");
+                    msStyle.alignment = TextAnchor.MiddleRight;
+                    msStyle.fontStyle = FontStyle.Bold;
+
+                    GUILayout.Space(8);
+                    GUILayout.BeginScrollView(AttributeScroll);
+                    GUILayout.Label("Refer Name", "BoldLabel");
+                    obj.Name = GUILayout.TextField(obj.Name);
+                    GUILayout.Space(8);
+                    GUILayout.Label("Transform", "BoldLabel");
+                    obj.Position = EditorGUILayout.Vector3Field("Position", obj.Position);
+                    obj.Rotation = EditorGUILayout.FloatField("Rotation", obj.Rotation);
+                    GUILayout.Space(8);
+                    GUILayout.EndScrollView();
+                }
                 else if (TargetThing is Judge) 
                 {
                     Judge obj = (Judge)TargetThing;
@@ -986,6 +1075,7 @@ public class Charter : EditorWindow
                     obj.Type = (Judge.JudgeType)EditorGUILayout.EnumPopup((System.Enum)obj.Type);
                     GUILayout.Space(8);
                     GUILayout.Label("Transform", "BoldLabel");
+                    obj.Group = EditorGUILayout.TextField("Group", obj.Group);
                     if (obj.Type == Judge.JudgeType.Line)
                     {
                         obj.Position = EditorGUILayout.Vector3Field("Position", obj.Position);
@@ -1018,11 +1108,13 @@ public class Charter : EditorWindow
                     GUILayout.Space(8);
                     GUILayout.BeginScrollView(AttributeScroll);
                     GUILayout.Label("Type", "BoldLabel");
-                    obj.Type = (HitObject.HitType)EditorGUILayout.EnumPopup((System.Enum)obj.Type);
+                    obj.Type = (HitObject.HitType)EditorGUILayout.EnumPopup(obj.Type);
                     GUILayout.Space(8);
                     GUILayout.Label("Transform", "BoldLabel");
                     obj.Position = EditorGUILayout.Slider("Position", obj.Position, 0, 1);
                     obj.Velocity = EditorGUILayout.Vector3Field("Velocity", obj.Velocity);
+                    GUILayout.Label("Coordinate Mode");
+                    obj.CoordinateMode = (CoordinateMode)EditorGUILayout.EnumPopup(obj.CoordinateMode);
                     GUILayout.Space(8);
                     GUILayout.Label("Appearance", "BoldLabel");
                     obj.Opacity = EditorGUILayout.FloatField("Opacity", obj.Opacity);
@@ -1089,7 +1181,7 @@ public class Charter : EditorWindow
     
     public void ConfigBar(int id)
     {
-        configMode = GUI.Toolbar(new Rect(0, 0, 240, 24), configMode, new[]{ "Config.", "Attrib.", "S.board" });
+        configMode = GUI.Toolbar(new Rect(0, 0, 240, 24), configMode, new[]{ "Config.", "Attrib.", "S.board", "Groups" });
     }
     
     public void Toolbar(int id)

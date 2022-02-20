@@ -167,9 +167,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f9cb42ca1d744d43a7199b6e54f2b61, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _PlayableSong: {fileID: 11400000, guid: 44ba41c6c5af3e844ad538768619f572, type: 2}
+  _PlayableSong: {fileID: 11400000, guid: 24ad79cf68decc846a0e3223772ca1a1, type: 2}
   ChartID: 0
   MainCamera: {fileID: 963194228}
+  AudioPlayer: {fileID: 677087561}
+  GroupSample: {fileID: 6105933108927450987, guid: e8d0cf0f90be459428d82ee5c21be228,
+    type: 3}
   JudgeSample: {fileID: 6864182907806154686, guid: 209d2aced940fa547a2c1a0eadb99d9e,
     type: 3}
   NormalHit: {fileID: 220466331973319631, guid: 24b6d75c4cbf2114b819d3adb7ca1c2f,
@@ -177,13 +180,18 @@ MonoBehaviour:
   CatchHit: {fileID: 8853084920661638706, guid: 6702c3911de79434297688ceaf7ce116,
     type: 3}
   FlickHit: {fileID: 220466331973319631, guid: 24b6d75c4cbf2114b819d3adb7ca1c2f, type: 3}
-  AudioPlayer: {fileID: 677087561}
-  TrackTime: -1
-  SyncThreshold: 0.05
   SongNameText: {fileID: 419557730}
   SongArtistText: {fileID: 611637941}
   DifficultyText: {fileID: 245517419}
   ProgressBar: {fileID: 187105421}
+  ScoreText: {fileID: 513419400}
+  ComboText: {fileID: 1368325160}
+  TrackTime: -1
+  SyncThreshold: 0.05
+  Autoplay: 1
+  RawScore: 0
+  MaxRawScore: 0
+  Combo: 0
 --- !u!1 &187105418
 GameObject:
   m_ObjectHideFlags: 0
@@ -255,7 +263,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 2100000, guid: f054aaab1092cc547a6c25d3e89e3a60, type: 2}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.2509804}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.2509804}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -347,8 +355,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -548,8 +556,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -663,7 +671,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 502998643}
   m_Enabled: 1
-  m_Alpha: 0.4
+  m_Alpha: 0.6
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
@@ -735,8 +743,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -811,7 +819,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 513419398}
   m_Enabled: 1
-  m_Alpha: 0.4
+  m_Alpha: 0.6
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
@@ -882,8 +890,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -991,7 +999,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: c49dd1e80bb94af4ca09e996f7daeb72, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 4f0165cb12d1cd344964c62127004362, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
@@ -1247,7 +1255,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 2100000, guid: f054aaab1092cc547a6c25d3e89e3a60, type: 2}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1343,7 +1351,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 2100000, guid: f054aaab1092cc547a6c25d3e89e3a60, type: 2}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1434,8 +1442,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1573,7 +1581,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 2100000, guid: f054aaab1092cc547a6c25d3e89e3a60, type: 2}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1634,7 +1642,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.020247413, g: 0.021010594, b: 0.066037714, a: 0}
+  m_BackGroundColor: {r: 0.8336418, g: 0.9056604, b: 0.7732289, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -1856,7 +1864,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 2100000, guid: f054aaab1092cc547a6c25d3e89e3a60, type: 2}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1939,7 +1947,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 0
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c641b53ae2110d547a97b22cdeaf05f6, type: 2}
   m_sharedMaterial: {fileID: -8516194259502598896, guid: c641b53ae2110d547a97b22cdeaf05f6,
@@ -1949,8 +1957,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -2025,7 +2033,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1368325158}
   m_Enabled: 1
-  m_Alpha: 0.1
+  m_Alpha: 0.2
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
@@ -2100,7 +2108,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 2100000, guid: f054aaab1092cc547a6c25d3e89e3a60, type: 2}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

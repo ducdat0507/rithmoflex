@@ -17,9 +17,9 @@ public class JudgeHolder : MonoBehaviour
     void Update()
     {
         judge.Advance(ChartPlayer.main.TrackTime * 1000);
-        transform.position = new Vector3(judge.Position.x - 6, -judge.Position.y + 3.375f, -judge.Position.z);
-        transform.eulerAngles = Vector3.back * judge.Rotation;
-        line.startColor = line.endColor = new Color(1, 1, 1, judge.Opacity);
+        transform.localPosition = new Vector3(judge.Position.x, -judge.Position.y, judge.Position.z);
+        transform.localEulerAngles = Vector3.back * judge.Rotation;
+        line.startColor = line.endColor = new Color(0, 0, 0, judge.Opacity);
         UpdateLine();
         
         while (true)

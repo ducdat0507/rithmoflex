@@ -15,6 +15,7 @@ public class HitHolder : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        
         Update();
     }
 
@@ -25,7 +26,10 @@ public class HitHolder : MonoBehaviour
 
         float tt = hit.Offset - ChartPlayer.main.TrackTime * 1000;
         float gt = hit.Rail.Count > 0 ? hit.Rail[hit.Rail.Count - 1].Offset - ChartPlayer.main.TrackTime * 1000 : tt;
-        if (gt < -200) StartCoroutine(Fade());
+        if (ChartPlayer.main.Autoplay && gt < 0) {
+            ChartPlayer.main.Score(hit.Type == HitObject.HitType.Catch ? 1 : 3, 1);
+            StartCoroutine(Fade());
+        } else if (gt < -200) StartCoroutine(Fade());
 
         transform.eulerAngles = ChartPlayer.main.MainCamera.eulerAngles;
         float rPos = hit.Position;
@@ -56,10 +60,13 @@ public class HitHolder : MonoBehaviour
             rail.SetPositions(railPoints.ToArray());
         }
 
-        sprite.color = new Color(1, 1, 1, 1 + gt / 200);
+        sprite.color = new Color(0, 0, 0, 1 + gt / 200);
         if (tt < 0) tt = 0;
         transform.localPosition = parent.GetPosition(rPos);
-        transform.position += new Vector3(hit.Velocity.x, -hit.Velocity.y, hit.Velocity.z) * tt / 1000;
+        if (hit.CoordinateMode == CoordinateMode.Local)
+            transform.localPosition += new Vector3(hit.Velocity.x, -hit.Velocity.y, hit.Velocity.z) * tt / 1000;
+        else
+            transform.position += new Vector3(hit.Velocity.x, -hit.Velocity.y, hit.Velocity.z) * tt / 1000;
     }
 
     public IEnumerator Fade() {
