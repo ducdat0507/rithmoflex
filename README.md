@@ -1,5 +1,5 @@
 # rithmoflex
-todo: proper readme
+**Project: Rithmoflex** is a rhythm game prototype designed for mobile phones, which later in its development, have been scraped and reworked into what's known as [https://github.com/ducdat0507/janoarg] today(JANOARG).
 
 ## setup:
 * get unity editor (i'm using 2021.1)
